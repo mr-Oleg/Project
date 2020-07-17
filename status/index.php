@@ -2,7 +2,7 @@
 
     $cam_id = $_GET['id'];
     if(!isset($cam_id)){
-        echo "Camera is not chosen";
+        echo "Камера не найдена";
         exit();
     }
 
@@ -13,24 +13,31 @@
     $query = "SELECT count(1) FROM cam_address WHERE addr_id = {$cam_id}";
     $response = $con->query($query);
     if($response === false){
-        echo "Query error";
+        echo "Ошибка запроса в базу данных";
         exit();
     }
 
     $is_id = $response->fetch(PDO::FETCH_NUM)[0];
     if($is_id == 0){
-        echo "Camera is not found";
+        echo "Камера не найдена";
         exit();
     }
 
     $query = "SELECT * FROM recognize WHERE rec_id = {$cam_id}";
     $response = $con->query($query);
     if($response === false){
-        echo "Query error";
+        echo "Ошибка запроса в базу данных";
         exit();
     }
-
     $to_recognize = $response->fetch(PDO::FETCH_ASSOC);
+
+    $query = "SELECT * FROM sensitivity WHERE cam_id = {$cam_id}";
+    $response = $con->query($query);
+    if($response === false){
+        echo "Ошибка запроса в базу данных";
+        exit();
+    }
+    $sensitivity = $response->fetch(PDO::FETCH_ASSOC);
 
 ?>
 
@@ -48,13 +55,13 @@
         <div class="container-fluid pb-5">
             <div class="row my-4 mx-1">
                 <div class="col-5 ">
-                    <div class="row border border-dark rounded bg-secondary p-1 shadow my-3">
+                    <div class="row border border-dark rounded bg-secondary p-1 shadow my-3 d-none">
                         <video id="video" src="" class="w-100" autoplay />
                     </div>
                     <div class="row border border-dark rounded bg-secondary p-1 shadow my-3 d-none">
                         <canvas id="canvas" width="640" height="480" type="video/mp4"></canvas>
                     </div>
-                    <div class="row border border-dark rounded bg-secondary p-1 shadow my-3">
+                    <div class="row border border-dark rounded bg-secondary p-1 shadow my-3" style="min-height: 10em">
                         <img id="image" class="w-100"></img>
                     </div>
                     <div class="row ml-2 my-3">
@@ -89,66 +96,151 @@
                     </div>
                 </div>
                 <div class="col-7">
-                    <div class="row mx-5 my-3">
-                        <div class="checkbox mb-0 h3 pt-2" style="line-height: 0">
-                            <input class="custom-checkbox" type="checkbox" id="check_exist" name="check_exist">
-                            <label for="check_exist" class="mb-0" onclick="check(<? echo $cam_id ?>, 'exist')"></label>
+
+                    <div class="mx-5">
+                        <div class="row my-3">
+                            <div class="checkbox mb-0 h3 pt-2 mr-5" style="line-height: 0">
+                                <input class="custom-checkbox" type="checkbox" id="check_exist" name="check_exist">
+                                <label for="check_exist" class="mb-0" onclick="check('exist')"></label>
+                            </div>
+                            <div class="rounded-circle p-1 bg-dark mr-5">
+                                <div class="rounded-circle p-3 bg-dark" id="sig_exist"></div>
+                            </div>
+                            <div class="h4 p-1 mb-0 cursor-pointer" onclick="toggle_settings('exist')">На рабочем месте</div>
                         </div>
-                        <div class="rounded-circle p-1 bg-dark ml-5">
-                            <div class="rounded-circle p-3 bg-dark" id="sig_exist"></div>
+                        <div class="row my-3 settings" id="settings_exist">
+                            <div class="col-md-7 text-center p-0 mr-5">
+                                <form>
+                                    <div class="form-group">
+                                        <label for="sense_exist">Чувствительность</label>
+                                        <input type="range" class="form-control-range" id="sense_exist">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4 p-0"><button class="btn btn-primary text-center" onclick="location_subs('exist')">Слушатели</button></div>
                         </div>
-                        <div class="h4 p-1 ml-5 mb-0">На рабочем месте</div>
                     </div>
-                    <div class="row mx-5 my-3">
-                        <div class="checkbox mb-0 h3 pt-2" style="line-height: 0">
-                            <input class="custom-checkbox" type="checkbox" id="check_anger" name="check_anger">
-                            <label for="check_anger" class="mb-0" onclick="check(<? echo $cam_id ?>, 'anger')"></label>
+
+                    <div class="mx-5">
+                        <div class="row my-3">
+                            <div class="checkbox mb-0 h3 pt-2 mr-5" style="line-height: 0">
+                                <input class="custom-checkbox" type="checkbox" id="check_anger" name="check_anger">
+                                <label for="check_anger" class="mb-0" onclick="check('anger')"></label>
+                            </div>
+                            <div class="rounded-circle p-1 bg-dark mr-5">
+                                <div class="rounded-circle p-3 bg-dark" id="sig_anger"></div>
+                            </div>
+                            <div class="h4 p-1 mb-0 cursor-pointer" onclick="toggle_settings('anger')">Агрессия</div>
                         </div>
-                        <div class="rounded-circle p-1 bg-dark ml-5">
-                            <div class="rounded-circle p-3 bg-dark" id="sig_anger"></div>
+                        <div class="row my-3 settings" id="settings_anger">
+                            <div class="col-md-7 text-center p-0 mr-5">
+                                <form>
+                                    <div class="form-group">
+                                        <label for="sense_anger">Чувствительность</label>
+                                        <input type="range" class="form-control-range" id="sense_anger">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4 p-0"><button class="btn btn-primary text-center" onclick="location_subs('anger')">Слушатели</button></div>
                         </div>
-                        <div class="h4 p-1 ml-5 mb-0">Злость</div>
                     </div>
-                    <div class="row mx-5 my-3">
-                        <div class="checkbox mb-0 h3 pt-2" style="line-height: 0">
-                            <input class="custom-checkbox" type="checkbox" id="check_tire" name="check_tire">
-                            <label for="check_tire" class="mb-0" onclick="check(<? echo $cam_id ?>, 'tire')"></label>
+
+                    <div class="mx-5">
+                        <div class="row my-3">
+                            <div class="checkbox mb-0 h3 pt-2 mr-5" style="line-height: 0">
+                                <input class="custom-checkbox" type="checkbox" id="check_tire" name="check_tire">
+                                <label for="check_tire" class="mb-0" onclick="check('tire')"></label>
+                            </div>
+                            <div class="rounded-circle p-1 bg-dark mr-5">
+                                <div class="rounded-circle p-3 bg-dark" id="sig_tire"></div>
+                            </div>
+                            <div class="h4 p-1 mb-0 cursor-pointer" onclick="toggle_settings('tire')">Усталость</div>
                         </div>
-                        <div class="rounded-circle p-1 bg-dark ml-5">
-                            <div class="rounded-circle p-3 bg-dark" id="sig_tire"></div>
+                        <div class="row my-3 settings" id="settings_tire">
+                            <div class="col-md-7 text-center p-0 mr-5">
+                                <form>
+                                    <div class="form-group">
+                                        <label for="sense_tire">Чувствительность</label>
+                                        <input type="range" class="form-control-range" id="sense_tire">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4 p-0"><button class="btn btn-primary text-center" onclick="location_subs('tire')">Слушатели</button></div>
                         </div>
-                        <div class="h4 p-1 ml-5 mb-0">Усталость</div>
                     </div>
-                    <div class="row mx-5 my-3">
-                        <div class="checkbox mb-0 h3 pt-2" style="line-height: 0">
-                            <input class="custom-checkbox" type="checkbox" id="check_stroke" name="check_stroke">
-                            <label for="check_stroke" class="mb-0" onclick="check(<? echo $cam_id ?>, 'stroke')"></label>
+
+                    <div class="mx-5">
+                        <div class="row my-3">
+                            <div class="checkbox mb-0 h3 pt-2 mr-5" style="line-height: 0">
+                                <input class="custom-checkbox" type="checkbox" id="check_stroke" name="check_stroke">
+                                <label for="check_stroke" class="mb-0" onclick="check('stroke')"></label>
+                            </div>
+                            <div class="rounded-circle p-1 bg-dark mr-5">
+                                <div class="rounded-circle p-3 bg-dark" id="sig_stroke"></div>
+                            </div>
+                            <div class="h4 p-1 mb-0 cursor-pointer" onclick="toggle_settings('stroke')">Инсульт</div>
                         </div>
-                        <div class="rounded-circle p-1 bg-dark ml-5">
-                            <div class="rounded-circle p-3 bg-dark" id="sig_stroke"></div>
+                        <div class="row my-3 settings" id="settings_stroke">
+                            <div class="col-md-7 text-center p-0 mr-5">
+                                <form>
+                                    <div class="form-group">
+                                        <label for="sense_stroke">Чувствительность</label>
+                                        <input type="range" class="form-control-range" id="sense_stroke">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4 p-0"><button class="btn btn-primary text-center" onclick="location_subs('stroke')">Слушатели</button></div>
                         </div>
-                        <div class="h4 p-1 ml-5 mb-0">Инсульт</div>
                     </div>
-                    <div class="row mx-5 my-3">
-                        <div class="checkbox mb-0 h3 pt-2" style="line-height: 0">
-                            <input class="custom-checkbox" type="checkbox" id="check_sad" name="check_sad">
-                            <label for="check_sad" class="mb-0" onclick="check(<? echo $cam_id ?>, 'sad')"></label>
+
+                    <div class="mx-5">
+                        <div class="row my-3">
+                            <div class="checkbox mb-0 h3 pt-2 mr-5" style="line-height: 0">
+                                <input class="custom-checkbox" type="checkbox" id="check_sad" name="check_sad">
+                                <label for="check_sad" class="mb-0" onclick="check('sad')"></label>
+                            </div>
+                            <div class="rounded-circle p-1 bg-dark mr-5">
+                                <div class="rounded-circle p-3 bg-dark" id="sig_sad"></div>
+                            </div>
+                            <div class="h4 p-1 mb-0 cursor-pointer" onclick="toggle_settings('sad')">Печаль</div>
                         </div>
-                        <div class="rounded-circle p-1 bg-dark ml-5">
-                            <div class="rounded-circle p-3 bg-dark" id="sig_sad"></div>
+                        <div class="row my-3 settings" id="settings_sad">
+                            <div class="col-md-7 text-center p-0 mr-5">
+                                <form>
+                                    <div class="form-group">
+                                        <label for="sense_sad">Чувствительность</label>
+                                        <input type="range" class="form-control-range" id="sense_sad">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4 p-0"><button class="btn btn-primary text-center" onclick="location_subs('sad')">Слушатели</button></div>
                         </div>
-                        <div class="h4 p-1 ml-5 mb-0">Печаль</div>
                     </div>
-                    <div class="row mx-5 my-3">
-                        <div class="checkbox mb-0 h3 pt-2" style="line-height: 0">
-                            <input class="custom-checkbox" type="checkbox" id="check_happy" name="check_happy">
-                            <label for="check_happy" class="mb-0" onclick="check(<? echo $cam_id ?>, 'happy')"></label>
+
+                    <div class="mx-5">
+                        <div class="row my-3">
+                            <div class="checkbox mb-0 h3 pt-2 mr-5" style="line-height: 0">
+                                <input class="custom-checkbox" type="checkbox" id="check_happy" name="check_happy">
+                                <label for="check_happy" class="mb-0" onclick="check('happy')"></label>
+                            </div>
+                            <div class="rounded-circle p-1 bg-dark mr-5">
+                                <div class="rounded-circle p-3 bg-dark" id="sig_happy"></div>
+                            </div>
+                            <div class="h4 p-1 mb-0 cursor-pointer" onclick="toggle_settings('happy')">Радость</div>
                         </div>
-                        <div class="rounded-circle p-1 bg-dark ml-5">
-                            <div class="rounded-circle p-3 bg-dark" id="sig_happy"></div>
+                        <div class="row my-3 settings" id="settings_happy">
+                            <div class="col-md-7 text-center p-0 mr-5">
+                                <form>
+                                    <div class="form-group">
+                                        <label for="sense_happy">Чувствительность</label>
+                                        <input type="range" class="form-control-range" id="sense_happy">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4 p-0"><button class="btn btn-primary text-center" onclick="location_subs('happy')">Слушатели</button></div>
                         </div>
-                        <div class="h4 p-1 ml-5 mb-0">Радость</div>
                     </div>
+
                     <div class="row ml-5 mt-5">
                         <button type="button" class="btn btn-primary" id="btn-start" onclick="start()">Старт</button>
                         <button type="button" class="btn btn-primary ml-2" id="btn-stop" disabled onclick="stop()">Стоп</button>
@@ -170,6 +262,21 @@
         $("#check_stroke")[0].checked = <? echo $to_recognize[rec_stroke] == 1?1:0; ?>;
         $("#check_sad")[0].checked = <? echo $to_recognize[rec_sadness] == 1?1:0; ?>;
         $("#check_happy")[0].checked = <? echo $to_recognize[rec_happiness] == 1?1:0; ?>;
+
+        $("#sense_exist")[0].value = <? echo $sensitivity[sense_exist] * 100?>;
+        $("#sense_anger")[0].value = <? echo $sensitivity[sense_anger] * 100?>;
+        $("#sense_tire")[0].value = <? echo $sensitivity[sense_tire] * 100?>;
+        $("#sense_stroke")[0].value = <? echo $sensitivity[sense_stroke] * 100?>;
+        $("#sense_sad")[0].value = <? echo $sensitivity[sense_sad] * 100?>;
+        $("#sense_happy")[0].value = <? echo $sensitivity[sense_happy] * 100?>;
+
+        $("#sense_exist").change(function(){change_sense("exist", this.value)});
+        $("#sense_anger").change(function(){change_sense("anger", this.value)});
+        $("#sense_tire").change(function(){change_sense("tire", this.value)});
+        $("#sense_stroke").change(function(){change_sense("stroke", this.value)});
+        $("#sense_sad").change(function(){change_sense("sad", this.value)});
+        $("#sense_happy").change(function(){change_sense("happy", this.value)});
+
         if($("#check_exist")[0].checked){
             $("#sig_exist").removeClass("bg-dark");
             $("#sig_exist").addClass("bg-secondary");
@@ -195,22 +302,26 @@
             $("#sig_happy").addClass("bg-secondary");
         }
 
+        $(".settings").toggle();
+
         var canvas = $("#canvas")[0];
         var video = $("#video")[0];
         var img_box = $("#image")[0]
         var ctx = canvas.getContext("2d");
         var cameraInterval;
         var localMediaStream = null;
+        var cam_id = <? echo $cam_id ?>;
+        var started = false;
 
         navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
         window.URL = window.URL || window.webkitURL;
         navigator.getUserMedia({video: true}, function(stream){video.srcObject = stream, localMediaStream = stream;}, function(){console.log("camera is not working")});
 
-        function check(id, mode) {
+        function check(mode) {
             let checked = $("#check_"+mode)[0].checked;
             let request = {
                 "type" : mode,
-                "id" : id,
+                "id" : cam_id,
                 "value" : checked?0:1
             }
             $.ajax({
@@ -269,12 +380,14 @@
         }
 
         function start(){
+            started = true;
             cameraInterval = setInterval(function(){snapshot();}, 1000);
             $("#btn-start")[0].disabled = true;
             $("#btn-stop")[0].disabled = false;
         }
 
         function stop(){
+            started = false;
             clearInterval(cameraInterval);
             img_box.src="";
             setTimeout(function(){img_box.src="";},1000);
@@ -291,9 +404,8 @@
 
         function send_img(){
             let b64 = canvas.toDataURL().split(",")[1];
-            let id = <? echo $cam_id ?>;
             let request = {
-                "id" : id,
+                "id" : cam_id,
                 "img" : b64
             }
             $.ajax({
@@ -302,21 +414,47 @@
                 url: 'php/http.php?action=process_img',
                 data: "data="+JSON.stringify(request),
                 success: function(data){
-                    let b64 = data['message']['img'];
-                    let img = new Image();
-                    img.src = "data:image/png;base64," + b64.split(" ").join("+");
-                    img_box.src = img.src;
-                    let status = data['message']['status'];
-                    if(status){
-                        console.log(status);
-                        set_signal("exist", status['exist']);
-                        set_signal("anger", status['anger']);
-                        set_signal("tire", status['tire']);
-                        set_signal("stroke", status['stroke']);
-                        set_signal("sad", status['sadness']);
-                        set_signal("happy", status['happiness']);
+                    if(started){
+                        let b64 = data['message']['img'];
+                        let img = new Image();
+                        img.src = "data:image/png;base64," + b64.split(" ").join("+");
+                        img_box.src = img.src;
+                        let status = data['message']['status'];
+                        if(status){
+                            set_signal("exist", status['exist']);
+                            set_signal("anger", status['anger']);
+                            set_signal("tire", status['tire']);
+                            set_signal("stroke", status['stroke']);
+                            set_signal("sad", status['sadness']);
+                            set_signal("happy", status['happiness']);
+                        }
                     }
                 }
+            });
+        }
+
+        function location_subs(mode){
+            document.location = "subs.php?id="+cam_id+"&mode="+mode;
+        }
+
+        function toggle_settings(mode){
+            $("#settings_"+mode).toggle();
+        }
+
+        function change_sense(mode, value){
+            let checked = $("#check_"+mode)[0].checked;
+            let request = {
+                "id" : cam_id,
+                "type" : mode,
+                "value" : value/100
+            }
+            $.ajax({
+                type: 'POST',
+                dataType: 'JSON',
+                url: 'php/http.php?action=change_sense',
+                data: "data="+JSON.stringify(request),
+                success: function(data){
+                    console.log(data)}
             });
         }
 
