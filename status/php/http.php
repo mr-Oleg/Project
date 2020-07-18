@@ -56,6 +56,25 @@ switch ($_GET['action']){
 		$success["message"] = $message;
 		response($success);
 		break;
+
+	case 'change_sense':
+		$data = $_POST["data"];
+		if(!isset($data)){
+			$error["message"] = "Неверные параметры";
+			response($error);
+		}
+		$data = json_decode($data, true);
+		$id = $data["id"];
+		$type = $data["type"];
+		$value = $data["value"];
+		if(!isset($id) || !isset($type) || !isset($value)){
+			$error["message"] = "Неверные параметры";
+			response($error);
+		}
+		$message = change_sense($type, $id, $value);
+		$success["message"] = $message;
+		response($success);
+		break;
 	
 	default:
 		$error["message"] = "Неверный запрос";
@@ -171,6 +190,14 @@ function process_img($id, $img){
     }
     $recs = $response->fetch(PDO::FETCH_ASSOC);
 
+    $query = "SELECT * FROM sensitivity WHERE cam_id = {$id}";
+	$response = $con->query($query);
+	if($response === false){
+        $error["message"] = "Ошибка запроса в базу данных";
+		response($error);
+    }
+    $senses = $response->fetch(PDO::FETCH_ASSOC);
+
     $exist = -1;
     $anger = -1;
     $tire = -1;
@@ -188,7 +215,7 @@ function process_img($id, $img){
 
 			if($recs["rec_anger"]==1){
 				$anger_value = $emotions[0];
-				if($anger_value > 0.7) $anger = 3;
+				if($anger_value > $senses['sense_anger']) $anger = 3;
 				else if($anger_value > 0.3) $anger = 2;
 				else if($anger_value >= 0) $anger = 1;
 				else $anger = 0;
@@ -196,14 +223,14 @@ function process_img($id, $img){
 
 			if($recs["rec_sadness"]==1){
 				$sadness_value = $emotions[1];
-				if($sadness_value > 0.5) $sadness = 2;
+				if($sadness_value > $senses['sense_sad']) $sadness = 2;
 				else if($sadness_value > 0) $sadness = 1;
 				else $sadness = 0;
 			}
 
 			if($recs["rec_happiness"]==1){
 				$happiness_value = $emotions[2];
-				if($happiness_value > 0.5) $happiness = 1;
+				if($happiness_value > $senses['sense_happy']) $happiness = 1;
 				else if($happiness_value > 0) $happiness = 2;
 				else $sadness = 0;
 			}
@@ -239,4 +266,78 @@ function process_img($id, $img){
 		]
 	];
 
+}
+
+
+/*_____________Изменить чувствительность______________*/
+function change_sense($type, $id, $value){
+
+	switch ($type) {
+		case 'exist':
+			$query = "UPDATE sensitivity SET sense_exist = {$value} WHERE cam_id = {$id}";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'anger':
+			$query = "UPDATE sensitivity SET sense_anger = {$value} WHERE cam_id = {$id}";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+			
+		case 'tire':
+			$query = "UPDATE sensitivity SET sense_tire = {$value} WHERE cam_id = {$id}";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'stroke':
+			$query = "UPDATE sensitivity SET sense_stroke = {$value} WHERE cam_id = {$id}";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'sad':
+			$query = "UPDATE sensitivity SET sense_sad = {$value} WHERE cam_id = {$id}";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'happy':
+			$query = "UPDATE sensitivity SET sense_happy = {$value} WHERE cam_id = {$id}";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		default:
+			$error["message"] = "Неверные параметры";
+			response($error);
+			break;
+	}
+
+	return "Успех";
 }
