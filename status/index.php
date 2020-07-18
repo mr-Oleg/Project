@@ -256,19 +256,19 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
 
     <script type="text/javascript">
-        $("#check_exist")[0].checked = <? echo $to_recognize[rec_existance] == 1?1:0; ?>;
-        $("#check_anger")[0].checked = <? echo $to_recognize[rec_anger] == 1?1:0; ?>;
-        $("#check_tire")[0].checked = <? echo $to_recognize[rec_tire] == 1?1:0; ?>;
-        $("#check_stroke")[0].checked = <? echo $to_recognize[rec_stroke] == 1?1:0; ?>;
-        $("#check_sad")[0].checked = <? echo $to_recognize[rec_sadness] == 1?1:0; ?>;
-        $("#check_happy")[0].checked = <? echo $to_recognize[rec_happiness] == 1?1:0; ?>;
+        $("#check_exist")[0].checked = <?= $to_recognize['rec_existance'] == 1?1:0; ?>;
+        $("#check_anger")[0].checked = <?= $to_recognize['rec_anger'] == 1?1:0; ?>;
+        $("#check_tire")[0].checked = <?= $to_recognize['rec_tire'] == 1?1:0; ?>;
+        $("#check_stroke")[0].checked = <?= $to_recognize['rec_stroke'] == 1?1:0; ?>;
+        $("#check_sad")[0].checked = <?= $to_recognize['rec_sadness'] == 1?1:0; ?>;
+        $("#check_happy")[0].checked = <?= $to_recognize['rec_happiness'] == 1?1:0; ?>;
 
-        $("#sense_exist")[0].value = <? echo $sensitivity[sense_exist] * 100?>;
-        $("#sense_anger")[0].value = <? echo $sensitivity[sense_anger] * 100?>;
-        $("#sense_tire")[0].value = <? echo $sensitivity[sense_tire] * 100?>;
-        $("#sense_stroke")[0].value = <? echo $sensitivity[sense_stroke] * 100?>;
-        $("#sense_sad")[0].value = <? echo $sensitivity[sense_sad] * 100?>;
-        $("#sense_happy")[0].value = <? echo $sensitivity[sense_happy] * 100?>;
+        $("#sense_exist")[0].value = <?= $sensitivity['sense_exist'] * 100?>;
+        $("#sense_anger")[0].value = <?= $sensitivity['sense_anger'] * 100?>;
+        $("#sense_tire")[0].value = <?= $sensitivity['sense_tire'] * 100?>;
+        $("#sense_stroke")[0].value = <?= $sensitivity['sense_stroke'] * 100?>;
+        $("#sense_sad")[0].value = <?= $sensitivity['sense_sad'] * 100?>;
+        $("#sense_happy")[0].value = <?= $sensitivity['sense_happy'] * 100?>;
 
         $("#sense_exist").change(function(){change_sense("exist", this.value)});
         $("#sense_anger").change(function(){change_sense("anger", this.value)});
@@ -310,7 +310,7 @@
         var ctx = canvas.getContext("2d");
         var cameraInterval;
         var localMediaStream = null;
-        var cam_id = <? echo $cam_id ?>;
+        var cam_id = <?= $cam_id ?>;
         var started = false;
 
         navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
@@ -327,7 +327,7 @@
             $.ajax({
                 type: 'POST',
                 dataType: 'JSON',
-                url: 'php/http.php?action=check_recognize',
+                url: 'php/server.php?action=check_recognize',
                 data: "data="+JSON.stringify(request),
                 success: function(data){
                     if(data["type"]=="success"){
@@ -393,6 +393,12 @@
             setTimeout(function(){img_box.src="";},1000);
             $("#btn-start")[0].disabled = false;
             $("#btn-stop")[0].disabled = true;
+            set_signal("exist", 0);
+            set_signal("anger", 0);
+            set_signal("tire", 0);
+            set_signal("stroke", 0);
+            set_signal("sad", 0);
+            set_signal("happy", 0);
         }
 
         function snapshot(){
@@ -411,7 +417,7 @@
             $.ajax({
                 type: 'POST',
                 dataType: 'JSON',
-                url: 'php/http.php?action=process_img',
+                url: 'php/server.php?action=process_img',
                 data: "data="+JSON.stringify(request),
                 success: function(data){
                     if(started){
@@ -434,7 +440,7 @@
         }
 
         function location_subs(mode){
-            document.location = "subs.php?id="+cam_id+"&mode="+mode;
+            document.location = "subscribers.php?id="+cam_id+"&mode="+mode;
         }
 
         function toggle_settings(mode){
@@ -451,10 +457,8 @@
             $.ajax({
                 type: 'POST',
                 dataType: 'JSON',
-                url: 'php/http.php?action=change_sense',
-                data: "data="+JSON.stringify(request),
-                success: function(data){
-                    console.log(data)}
+                url: 'php/server.php?action=change_sense',
+                data: "data="+JSON.stringify(request)
             });
         }
 

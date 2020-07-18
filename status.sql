@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Июл 17 2020 г., 16:41
+-- Время создания: Июл 18 2020 г., 19:54
 -- Версия сервера: 8.0.19
 -- Версия PHP: 7.1.33
 
@@ -60,7 +60,7 @@ CREATE TABLE `recognize` (
 --
 
 INSERT INTO `recognize` (`rec_id`, `rec_anger`, `rec_sadness`, `rec_happiness`, `rec_existance`, `rec_stroke`, `rec_tire`) VALUES
-(1, 1, 1, 1, 1, 1, 1);
+(1, 1, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -83,7 +83,28 @@ CREATE TABLE `sensitivity` (
 --
 
 INSERT INTO `sensitivity` (`cam_id`, `sense_exist`, `sense_anger`, `sense_tire`, `sense_stroke`, `sense_sad`, `sense_happy`) VALUES
-(1, 0.84, 0.74, 0.5, 0.5, 0.5, 0.26);
+(1, 0.84, 0.05, 0.5, 0.5, 0.5, 0.26);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `subscribers`
+--
+
+CREATE TABLE `subscribers` (
+  `sub_id` int NOT NULL,
+  `cam_id` int NOT NULL,
+  `sub_mode` text NOT NULL,
+  `sub_adr` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Дамп данных таблицы `subscribers`
+--
+
+INSERT INTO `subscribers` (`sub_id`, `cam_id`, `sub_mode`, `sub_adr`) VALUES
+(1, 1, 'happy', '1'),
+(13, 1, 'anger', 'http://status.apv/php/requests.php?test');
 
 --
 -- Индексы сохранённых таблиц
@@ -106,6 +127,22 @@ ALTER TABLE `recognize`
 --
 ALTER TABLE `sensitivity`
   ADD PRIMARY KEY (`cam_id`);
+
+--
+-- Индексы таблицы `subscribers`
+--
+ALTER TABLE `subscribers`
+  ADD PRIMARY KEY (`sub_id`);
+
+--
+-- AUTO_INCREMENT для сохранённых таблиц
+--
+
+--
+-- AUTO_INCREMENT для таблицы `subscribers`
+--
+ALTER TABLE `subscribers`
+  MODIFY `sub_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
