@@ -16,7 +16,7 @@ if(!isset($_GET['action'])){
 }
 
 
-include("py_request.php");
+include("requests.php");
 include("db.php");
 
 switch ($_GET['action']){
@@ -75,6 +75,45 @@ switch ($_GET['action']){
 		$success["message"] = $message;
 		response($success);
 		break;
+
+	case 'add_subscriber':
+		$data = $_POST["data"];
+		if(!isset($data)){
+			$error["message"] = "Неверные параметры";
+			response($error);
+		}
+		$data = json_decode($data, true);
+		$id = $data["id"];
+		$type = $data["type"];
+		$value = $data["value"];
+		if(!isset($id) || !isset($type) || !isset($value)){
+			$error["message"] = "Неверные параметры";
+			response($error);
+		}
+		$message = add_subscriber($type, $id, $value);
+		$success["message"] = $message;
+		response($success);
+		break;
+
+	case 'del_subscriber':
+		$data = $_POST["data"];
+		if(!isset($data)){
+			$error["message"] = "Неверные параметры";
+			response($error);
+		}
+		$data = json_decode($data, true);
+		$id = $data["id"];
+		$type = $data["type"];
+		$value = $data["value"];
+		$sub_id = $data["sub_id"];
+		if(!isset($id) || !isset($type) || !isset($value) || !isset($sub_id)){
+			$error["message"] = "Неверные параметры";
+			response($error);
+		}
+		$message = del_subscriber($type, $id, $sub_id, $value);
+		$success["message"] = $message;
+		response($success);
+		break;
 	
 	default:
 		$error["message"] = "Неверный запрос";
@@ -93,7 +132,7 @@ function response($response){
 
 /*_____________Вкл/выкл распознавания______________*/
 function check_recognize($type, $id, $value){
-
+	global $error;
 	switch ($type) {
 		case 'exist':
 			if($value==0) $rec_value = 0;
@@ -180,7 +219,7 @@ function check_recognize($type, $id, $value){
 
 /*_____________Распознавание______________*/
 function process_img($id, $img){
-	
+	global $error;
 	$con = get_connection();
 	$query = "SELECT * FROM recognize WHERE rec_id = {$id}";
 	$response = $con->query($query);
@@ -215,8 +254,27 @@ function process_img($id, $img){
 
 			if($recs["rec_anger"]==1){
 				$anger_value = $emotions[0];
-				if($anger_value > $senses['sense_anger']) $anger = 3;
-				else if($anger_value > 0.3) $anger = 2;
+				if($anger_value > $senses['sense_anger']){
+					$anger = 3;
+					$query = "SELECT sub_adr FROM subscribers WHERE cam_id = {$id} AND sub_mode = 'anger' ";
+					$response = $con->query($query);
+					if($response === false){
+				        $error["message"] = "Ошибка запроса в базу данных";
+						response($error);
+				    }
+				    $urls_row = $response->fetchAll(PDO::FETCH_NUM);
+				    $urls = [];
+				    foreach($urls_row as $key => $value){
+				    	$urls[$key] = $value[0];
+				    }
+				    $anger_message = [
+				    	"cam_id" => $id,
+				    	"mode" => "anger",
+				    	"message" => "Обнаружены признаки агрессии"
+				    ];
+				    send_requests($urls,$anger_message);
+				}
+				else if($anger_value > $senses['sense_anger'] / 2) $anger = 2;
 				else if($anger_value >= 0) $anger = 1;
 				else $anger = 0;
 			}
@@ -271,7 +329,7 @@ function process_img($id, $img){
 
 /*_____________Изменить чувствительность______________*/
 function change_sense($type, $id, $value){
-
+	global $error;
 	switch ($type) {
 		case 'exist':
 			$query = "UPDATE sensitivity SET sense_exist = {$value} WHERE cam_id = {$id}";
@@ -341,3 +399,158 @@ function change_sense($type, $id, $value){
 
 	return "Успех";
 }
+
+
+
+/*_____________Добавить подписчика______________*/
+function add_subscriber($type, $id, $value){
+	$value = addslashes($value);
+	global $error;
+	switch ($type) {
+		case 'exist':
+			$query = "INSERT INTO subscribers (cam_id, sub_mode, sub_adr) VALUES ({$id}, 'exist', '{$value}')";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'anger':
+			$query = "INSERT INTO subscribers (cam_id, sub_mode, sub_adr) VALUES ({$id}, 'anger', '{$value}')";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+			
+		case 'tire':
+			$query = "INSERT INTO subscribers (cam_id, sub_mode, sub_adr) VALUES ({$id}, 'tire', '{$value}')";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'stroke':
+			$query = "INSERT INTO subscribers (cam_id, sub_mode, sub_adr) VALUES ({$id}, 'stroke', '{$value}')";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'sad':
+			$query = "INSERT INTO subscribers (cam_id, sub_mode, sub_adr) VALUES ({$id}, 'sad', '{$value}')";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'happy':
+			$query = "INSERT INTO subscribers (cam_id, sub_mode, sub_adr) VALUES ({$id}, 'happy', '{$value}')";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		default:
+			$error["message"] = "Неверные параметры";
+			response($error);
+			break;
+	}
+
+	return "Успех";
+}
+
+
+
+/*_____________Удалить подписчика______________*/
+function del_subscriber($type, $id, $sub_id, $value){
+	$value = addslashes($value);
+	global $error;
+	switch ($type) {
+		case 'exist':
+			$query = "DELETE FROM subscribers WHERE sub_id = {$sub_id} AND cam_id = {$id} AND sub_mode = 'exist' AND sub_adr = '{$value}'";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'anger':
+			$query = "DELETE FROM subscribers WHERE sub_id = {$sub_id} AND cam_id = {$id} AND sub_mode = 'anger' AND sub_adr = '{$value}'";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+			
+		case 'tire':
+			$query = "DELETE FROM subscribers WHERE sub_id = {$sub_id} AND cam_id = {$id} AND sub_mode = 'tire' AND sub_adr = '{$value}'";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'stroke':
+			$query = "DELETE FROM subscribers WHERE sub_id = {$sub_id} AND cam_id = {$id} AND sub_mode = 'stroke' AND sub_adr = '{$value}'";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'sad':
+			$query = "DELETE FROM subscribers WHERE sub_id = {$sub_id} AND cam_id = {$id} AND sub_mode = 'sad' AND sub_adr = '{$value}'";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		case 'happy':
+			$query = "DELETE FROM subscribers WHERE sub_id = {$sub_id} AND cam_id = {$id} AND sub_mode = 'happy' AND sub_adr = '{$value}'";
+			$con = get_connection();
+		    $response = $con->query($query);
+		    if($response === false){
+		        $error["message"] = "Ошибка запроса в базу данных";
+				response($error);
+		    }
+			break;
+
+		default:
+			$error["message"] = "Неверные параметры";
+			response($error);
+			break;
+	}
+
+	return "Успех";
+}
+
+
+?>
